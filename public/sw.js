@@ -9,8 +9,8 @@
  *     Samples are large and never change, so cache-first is optimal.
  */
 
-const APP_CACHE = "octype-app-v1";
-const SAMPLE_CACHE = "octype-samples-v1";
+const APP_CACHE = "octype-app-v2";
+const SAMPLE_CACHE = "octype-samples-v2";
 
 /** App shell URLs to precache on install for instant offline. */
 const PRECACHE_URLS = ["/"];
