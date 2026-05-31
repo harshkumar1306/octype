@@ -18,6 +18,28 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+
+  /* Mobile hardening: no pull-to-refresh / overscroll bounce, no long-press
+     callout, no tap-highlight flash, no accidental text selection. */
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+
+/* Use dynamic viewport height where supported so the keyboard isn't hidden
+   behind mobile browser chrome (address bar). */
+@supports (height: 100dvh) {
+  .min-h-screen {
+    min-height: 100dvh;
+  }
+}
+
+/* Piano keys and controls should never be selectable on touch. */
+[role="application"],
+button {
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 /* Subtle background grain — keeps it from feeling flat. */

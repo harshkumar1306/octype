@@ -7,6 +7,7 @@
 
 import { create } from "zustand";
 
+import { isLowPowerDevice } from "@/lib/device";
 import type { AudioSettings } from "@/types/audio";
 
 interface SettingsState extends AudioSettings {
@@ -44,7 +45,7 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   velocitySensitivity: 0.65,
   defaultVelocity: 100,
   reverb: { enabled: true, amount: 0.25 },
-  voiceLimit: 24,
+  voiceLimit: isLowPowerDevice() ? 16 : 24,
   latencyOffsetMs: 0,
   transposeSemitones: 0,
   settingsOpen: false,
