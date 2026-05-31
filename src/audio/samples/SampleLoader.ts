@@ -24,7 +24,22 @@ import {
   type SampleRef,
 } from "@/audio/samples/SampleMap";
 
-const SAMPLES_PUBLIC_PREFIX = "/samples/salamander/notes/";
+/**
+ * Base URL for sample files.
+ *
+ * In production we serve samples from Cloudflare R2 (or any CDN) via the
+ * NEXT_PUBLIC_SAMPLES_BASE_URL env var. The bucket layout has a `notes/`
+ * folder (alongside harmonics/, pedal/, release/), so we append `/notes`.
+ *
+ * For local dev with files in public/, the var is unset and we fall back to
+ * the local path.
+ *
+ * NOTE: when fetching cross-origin, the R2 bucket must allow CORS for the
+ * app's origin (and http://localhost:3000 for local testing).
+ */
+const SAMPLES_BASE_URL = process.env.NEXT_PUBLIC_SAMPLES_BASE_URL
+  ? `${process.env.NEXT_PUBLIC_SAMPLES_BASE_URL.replace(/\/+$/, "")}/notes`
+  : "/samples/salamander/notes";
 
 /** Velocity layers we treat as "good enough" before going wider. */
 const PRIMARY_LAYERS = [8, 12, 4, 16, 1] as const;
@@ -272,7 +287,7 @@ class SampleLoaderImpl {
     if (!this.ctx) return;
     // Encode `#` (and any other reserved chars) so the URL doesn't get
     // truncated at a fragment. The cache key stays as the raw filename.
-    const url = `${SAMPLES_PUBLIC_PREFIX}${encodeURIComponent(filename)}`;
+    const url = `${SAMPLES_BASE_URL}/${encodeURIComponent(filename)}`;
     let bytes: ArrayBuffer;
     try {
       bytes = await loadSampleBytes(url, filename);

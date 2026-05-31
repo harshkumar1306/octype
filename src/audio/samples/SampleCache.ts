@@ -16,7 +16,10 @@ export async function loadSampleBytes(
   const cached = await readSampleBytes(cacheKey);
   if (cached) return cached;
 
-  const res = await fetch(publicUrl, { cache: "force-cache" });
+  // `cors` mode is required for cross-origin R2/CDN fetches; the bucket must
+  // send Access-Control-Allow-Origin. `force-cache` lets the browser/SW reuse
+  // a previously fetched copy.
+  const res = await fetch(publicUrl, { cache: "force-cache", mode: "cors" });
   if (!res.ok) {
     throw new Error(`Sample fetch failed (${res.status}): ${publicUrl}`);
   }

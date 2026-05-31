@@ -48,8 +48,10 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
-  // Sample files — cache-first.
-  if (url.pathname.startsWith("/samples/salamander/")) {
+  // Sample files — cache-first. Samples may be same-origin (local dev) or
+  // cross-origin (Cloudflare R2 in production), so match by file extension
+  // rather than path/origin.
+  if (url.pathname.endsWith(".ogg")) {
     event.respondWith(cacheFirst(event.request, SAMPLE_CACHE));
     return;
   }
@@ -60,7 +62,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // External requests — pass through.
+  // Other external requests — pass through.
 });
 
 async function cacheFirst(request, cacheName) {
