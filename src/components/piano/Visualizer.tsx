@@ -3,18 +3,12 @@
 /**
  * Visualizer — a horizontal waveform line that oscillates in response to
  * the audio output. Highest amplitude in the center, tapering at edges.
- *
- * Mobile/perf considerations:
- *   - Pauses the rAF loop when the tab is hidden (saves battery).
- *   - Throttles to ~30fps and caps device-pixel-ratio on low-power devices
- *     so the canvas redraw doesn't compete with audio for CPU.
  */
 
 import { useEffect, useRef } from "react";
 
 import { audioEngine } from "@/audio/engine/AudioEngine";
 import { useAudioEngineStatus } from "@/hooks/useAudioEngine";
-import { isLowPowerDevice } from "@/lib/device";
 
 export function Visualizer(): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -28,27 +22,15 @@ export function Visualizer(): JSX.Element {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const lowPower = isLowPowerDevice();
-    const maxDpr = lowPower ? 1 : 2;
-    const frameInterval = lowPower ? 1000 / 30 : 0; // throttle to 30fps on mobile
-    let lastFrame = 0;
-    let running = true;
-
     const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
-    const draw = (now: number): void => {
-      if (!running) return;
+    const draw = (): void => {
       animRef.current = requestAnimationFrame(draw);
-
-      // Throttle on low-power devices.
-      if (frameInterval > 0 && now - lastFrame < frameInterval) return;
-      lastFrame = now;
-
       const c = canvas.getContext("2d");
       if (!c) return;
 
       const rect = canvas.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
+      const dpr = window.devicePixelRatio || 1;
       const w = Math.floor(rect.width * dpr);
       const h = Math.floor(rect.height * dpr);
 
@@ -66,6 +48,7 @@ export function Visualizer(): JSX.Element {
 
       const points = Math.min(dataArray.length, Math.floor(w / 2));
       const step = Math.max(1, Math.floor(dataArray.length / points));
+      const mid = w / 2;
 
       for (let i = 0; i < points; i += 1) {
         const x = (i / points) * w;
@@ -74,8 +57,8 @@ export function Visualizer(): JSX.Element {
 
         // Window function: highest in center, tapering at edges.
         const t = i / points;
-        const windowAmp = Math.sin(t * Math.PI);
-        const y = h / 2 + deviation * windowAmp;
+        const window = Math.sin(t * Math.PI); // 0 at edges, 1 at center
+        const y = h / 2 + deviation * window;
 
         if (i === 0) c.moveTo(x, y);
         else c.lineTo(x, y);
@@ -83,30 +66,14 @@ export function Visualizer(): JSX.Element {
       c.stroke();
     };
 
-    const onVisibility = (): void => {
-      if (document.hidden) {
-        running = false;
-        cancelAnimationFrame(animRef.current);
-      } else if (!running) {
-        running = true;
-        animRef.current = requestAnimationFrame(draw);
-      }
-    };
-
-    document.addEventListener("visibilitychange", onVisibility);
-    animRef.current = requestAnimationFrame(draw);
-
-    return () => {
-      running = false;
-      cancelAnimationFrame(animRef.current);
-      document.removeEventListener("visibilitychange", onVisibility);
-    };
+    draw();
+    return () => cancelAnimationFrame(animRef.current);
   }, [status]);
 
   return (
     <canvas
       ref={canvasRef}
-      className="mb-2 h-8 w-full sm:h-10"
+      className="mb-2 h-10 w-full"
       aria-hidden="true"
     />
   );

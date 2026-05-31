@@ -56,26 +56,7 @@ export function PianoKeyboard(): JSX.Element {
   }, [startMidi, octaves]);
 
   const whiteWidth = width > 0 && layout.whiteCount > 0 ? width / layout.whiteCount : 0;
-  // Responsive height: on narrow screens (phones) keys get proportionally
-  // taller so they're easier to hit; on wide screens we cap the height.
-  const [viewportH, setViewportH] = useState<number>(0);
-  useEffect(() => {
-    const update = (): void => setViewportH(window.innerHeight);
-    update();
-    window.addEventListener("resize", update);
-    window.addEventListener("orientationchange", update);
-    return () => {
-      window.removeEventListener("resize", update);
-      window.removeEventListener("orientationchange", update);
-    };
-  }, []);
-
-  const isNarrow = width > 0 && width < 640;
-  const heightRatio = isNarrow ? 0.34 : HEIGHT_RATIO;
-  const minHeight = isNarrow ? 200 : MIN_HEIGHT;
-  // On phones, allow keys to use a healthy slice of the viewport height.
-  const maxHeight = isNarrow && viewportH > 0 ? Math.min(viewportH * 0.5, 360) : MAX_HEIGHT;
-  const height = Math.max(minHeight, Math.min(maxHeight, width * heightRatio));
+  const height = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, width * HEIGHT_RATIO));
 
   const positioned = useMemo(() => {
     let lastWhiteIndex = 0;

@@ -70,7 +70,7 @@ export default function HomePage(): JSX.Element {
   const showLoading = started && (engineStatus === "loading-samples" || engineStatus === "initializing");
 
   return (
-    <main className="relative z-10 flex min-h-screen flex-col" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+    <main className="relative z-10 flex min-h-screen flex-col">
       <Header />
 
       {showStartScreen ? (

@@ -12,8 +12,6 @@
  * sounds convincingly "roomy" for a piano.
  */
 
-import { isLowPowerDevice } from "@/lib/device";
-
 export interface ReverbNodes {
   input: AudioNode;
   output: AudioNode;
@@ -63,9 +61,7 @@ export function createReverb(ctx: AudioContext): ReverbNodes {
 
 function makeConcertHallIr(ctx: AudioContext): AudioBuffer {
   const sampleRate = ctx.sampleRate;
-  // Mobile/low-power: a much shorter tail keeps convolution cheap. Desktop
-  // gets the full concert-hall length.
-  const duration = isLowPowerDevice() ? 1.4 : 3.2;
+  const duration = 3.2;
   const length = Math.floor(sampleRate * duration);
   const buf = ctx.createBuffer(2, length, sampleRate);
 
