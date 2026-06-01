@@ -1,15 +1,19 @@
 "use client";
 
 /**
- * Main page — composes the piano UI shell.
+ * Main page — composes the landing screen and the piano shell.
  *
- * Phase 4: dedicated "Start Piano" button triggers engine init.
- * Arrow keys control octave range (left/right = shift, up/down = resize).
+ * View flow:
+ *   - "home": the Landing intro (what/how/features). Engine NOT started here
+ *     unless it already was — no caching/audio until the user enters.
+ *   - "piano": the instrument. A home button returns to "home" without
+ *     tearing down the audio engine, so re-entering is instant.
  */
 
 import { useCallback, useEffect, useState } from "react";
 
 import { Header } from "@/components/ui/Header";
+import { Landing } from "@/components/ui/Landing";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { StatusBar } from "@/components/ui/StatusBar";
 import { PianoKeyboard } from "@/components/piano/PianoKeyboard";
@@ -25,14 +29,16 @@ import { useSustainKey } from "@/hooks/useSustainKey";
 import { usePianoStore } from "@/stores/pianoStore";
 import { inputRouter } from "@/systems/input/InputRouter";
 
+type View = "home" | "piano";
+
 export default function HomePage(): JSX.Element {
-  const [started, setStarted] = useState(false);
+  const [view, setView] = useState<View>("home");
   const engineStatus = useAudioEngineStatus();
 
   useKeyboardInput();
   useSustainKey();
 
-  // Arrow key controls for octave range.
+  // Arrow key controls for octave range (only matters on the piano view).
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -61,33 +67,28 @@ export default function HomePage(): JSX.Element {
   }, []);
 
   const handleStart = useCallback(() => {
-    setStarted(true);
+    setView("piano");
     void inputRouter.ensureEngineStarted();
     void requestMidi();
   }, []);
 
-  const showStartScreen = !started && engineStatus === "idle";
-  const showLoading = started && (engineStatus === "loading-samples" || engineStatus === "initializing");
+  const handleHome = useCallback(() => {
+    // Release any held notes, but keep the engine warm for instant re-entry.
+    inputRouter.releaseAll();
+    setView("home");
+  }, []);
+
+  const showLoading =
+    view === "piano" &&
+    (engineStatus === "loading-samples" || engineStatus === "initializing");
 
   return (
     <main className="relative z-10 flex min-h-screen flex-col">
-      <Header />
+      <Header showHome={view === "piano"} onHome={handleHome} />
 
-      {showStartScreen ? (
-        <section className="flex flex-1 items-center justify-center px-4">
-          <div className="text-center">
-            <h2 className="mb-2 font-mono text-lg text-fg">octype</h2>
-            <p className="mb-6 font-mono text-xs text-fg-subtle">
-              browser-based virtual piano
-            </p>
-            <button
-              type="button"
-              onClick={handleStart}
-              className="rounded-lg border border-accent/50 bg-accent/10 px-8 py-3 font-mono text-sm text-accent-soft transition-all hover:border-accent hover:bg-accent/20 hover:shadow-[0_0_20px_rgba(167,139,250,0.15)]"
-            >
-              start piano
-            </button>
-          </div>
+      {view === "home" ? (
+        <section className="flex flex-1 items-start justify-center">
+          <Landing onStart={handleStart} />
         </section>
       ) : showLoading ? (
         <section className="flex flex-1 items-center justify-center px-4">
