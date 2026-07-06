@@ -23,6 +23,7 @@ class KeyboardInputImpl {
     if (typeof document === "undefined") return;
     document.addEventListener("keydown", this.onKeyDown);
     document.addEventListener("keyup", this.onKeyUp);
+    document.addEventListener("visibilitychange", this.onVisibilityChange);
     window.addEventListener("blur", this.onBlur);
     this.installed = true;
   }
@@ -31,8 +32,10 @@ class KeyboardInputImpl {
     if (!this.installed) return;
     document.removeEventListener("keydown", this.onKeyDown);
     document.removeEventListener("keyup", this.onKeyUp);
+    document.removeEventListener("visibilitychange", this.onVisibilityChange);
     window.removeEventListener("blur", this.onBlur);
     this.releaseAllHeld();
+    inputRouter.releaseAll();
     this.installed = false;
   }
 
@@ -90,6 +93,14 @@ class KeyboardInputImpl {
 
   private onBlur = (): void => {
     this.releaseAllHeld();
+    inputRouter.releaseAll();
+  };
+
+  private onVisibilityChange = (): void => {
+    if (document.hidden) {
+      this.releaseAllHeld();
+      inputRouter.releaseAll();
+    }
   };
 
   private releaseAllHeld(): void {

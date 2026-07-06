@@ -48,6 +48,19 @@ export function PianoKeyboard(): JSX.Element {
     return () => ro.disconnect();
   }, []);
 
+  // Clear active pointers on window blur / visibility change to prevent stuck keys.
+  useEffect(() => {
+    const handleReset = (): void => {
+      activePointers.current.clear();
+    };
+    window.addEventListener("blur", handleReset);
+    document.addEventListener("visibilitychange", handleReset);
+    return () => {
+      window.removeEventListener("blur", handleReset);
+      document.removeEventListener("visibilitychange", handleReset);
+    };
+  }, []);
+
   const layout = useMemo(() => {
     const endMidi = startMidi + octaves * 12;
     const keys = buildKeyRange(startMidi, endMidi);

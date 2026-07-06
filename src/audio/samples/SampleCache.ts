@@ -7,13 +7,19 @@
  */
 
 import { hasSampleBytes, readSampleBytes, writeSampleBytes } from "@/lib/db";
+import { logger } from "@/lib/logger";
 
 /** Loads bytes from cache, or fetches over the network and caches. */
 export async function loadSampleBytes(
   publicUrl: string,
   cacheKey: string,
 ): Promise<ArrayBuffer> {
-  const cached = await readSampleBytes(cacheKey);
+  let cached: ArrayBuffer | null = null;
+  try {
+    cached = await readSampleBytes(cacheKey);
+  } catch (err) {
+    logger.warn(`Failed to read sample from IndexedDB cache: ${cacheKey}`, err);
+  }
   if (cached) return cached;
 
   // `cors` mode is required for cross-origin R2/CDN fetches; the bucket must
@@ -25,7 +31,11 @@ export async function loadSampleBytes(
   }
   const bytes = await res.arrayBuffer();
   // Persist a copy before decoding (decode neuters the source ArrayBuffer).
-  await writeSampleBytes(cacheKey, bytes);
+  try {
+    await writeSampleBytes(cacheKey, bytes);
+  } catch (err) {
+    logger.warn(`Failed to write sample to IndexedDB cache: ${cacheKey}`, err);
+  }
   return bytes;
 }
 

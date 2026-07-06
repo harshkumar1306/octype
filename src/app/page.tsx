@@ -21,6 +21,7 @@ import { OctaveRange } from "@/components/piano/OctaveRange";
 import { KeyLabelToggle } from "@/components/piano/KeyLabel";
 import { Visualizer } from "@/components/piano/Visualizer";
 import { Recorder } from "@/components/piano/Recorder";
+import { MetronomeWidget } from "@/components/piano/MetronomeWidget";
 import { SettingsPanel } from "@/components/settings/SettingsPanel";
 import { useKeyboardInput } from "@/hooks/useKeyboardInput";
 import { useAudioEngineStatus } from "@/hooks/useAudioEngine";
@@ -99,7 +100,10 @@ export default function HomePage(): JSX.Element {
           <div className="w-full max-w-[98vw]">
             <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-1">
               <KeyLabelToggle />
-              <Recorder />
+              <div className="flex items-center gap-2">
+                <MetronomeWidget />
+                <Recorder />
+              </div>
             </div>
 
             <div className="rounded-xl border border-bg-subtle bg-bg-elevated/60 p-2 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)] sm:p-4">

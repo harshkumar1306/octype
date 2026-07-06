@@ -61,6 +61,15 @@ class InputRouterImpl {
   releaseAll(): void {
     const active = usePianoStore.getState().activeNotes;
     usePianoStore.getState().clearActiveNotes();
+    
+    // Clear all sustain sources to prevent stuck pedal state.
+    const wasSustained = this.sustainSources.size > 0;
+    this.sustainSources.clear();
+    if (wasSustained) {
+      audioEngine.setSustain(false);
+      for (const fn of this.sustainListeners) fn(false);
+    }
+
     audioEngine.releaseAll();
     if (active.size > 0) {
       logger.debug(`releaseAll (${active.size} notes)`);

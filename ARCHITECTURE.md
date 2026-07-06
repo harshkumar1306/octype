@@ -79,6 +79,8 @@ src/
 │   └── midi/
 │       ├── MidiManager.ts        # Web MIDI access, device discovery, hot-plug, routing
 │       └── MidiParser.ts         # Raw MIDI bytes → typed messages (PURE)
+│   └── metronome/
+│       └── MetronomeEngine.ts    # Lookahead-scheduled click track (singleton)
 │
 ├── systems/                      # App-level logic — no audio nodes, no React
 │   ├── input/
@@ -98,7 +100,8 @@ src/
 │   │   ├── KeyLabel.tsx          # Toolbar toggles (labels, note names) + SustainToggle
 │   │   ├── SustainToggle.tsx     # On-screen sustain pedal button
 │   │   ├── Visualizer.tsx        # Canvas waveform (reads AnalyserNode)
-│   │   └── Recorder.tsx          # MediaRecorder capture + download
+│   │   ├── Recorder.tsx          # MediaRecorder capture + download
+│   │   └── MetronomeWidget.tsx   # Collapsed ♩ BPM pill + expandable controls
 │   ├── ui/
 │   │   ├── Header.tsx            # App title, fullscreen toggle, settings button
 │   │   ├── StatusBar.tsx         # Active notes, engine status, load progress
@@ -112,6 +115,7 @@ src/
 ├── stores/                       # Zustand (UI/state only — NO audio timing)
 │   ├── pianoStore.ts             # Visible window + mapping anchor + active notes
 │   ├── settingsStore.ts          # All user preferences
+│   ├── metronomeStore.ts         # Metronome prefs (bpm, sig, vol, recordMetronome)
 │   └── mappingStore.ts           # Profiles + active profile + binding lookup
 │
 ├── hooks/                        # React subscription hooks (no business logic)
@@ -120,7 +124,8 @@ src/
 │   ├── useKeyMapping.ts          # Bindings-by-offset for label rendering
 │   ├── useMidi.ts                # MIDI state subscription + request/disable
 │   ├── useNoteVisuals.ts         # Per-key active-state subscription
-│   └── useSustainKey.ts          # Installs sustain-key document listener
+│   ├── useSustainKey.ts          # Installs sustain-key document listener
+│   └── useMetronome.ts           # Beat-tick subscription via useSyncExternalStore
 │
 ├── lib/
 │   ├── noteUtils.ts              # MIDI↔name, key colors, range building (PURE)
@@ -247,6 +252,28 @@ One voice = one note sounding. **Nodes are never reused** (Web Audio best practi
 ### 5.7 Effects
 - **Reverb** (`effects/Reverb.ts`): synthetic concert-hall impulse response generated at runtime (3.2s, early reflections in first 80ms, exponential decay + HF damping, stereo decorrelation). Wet/dry mix via two gain nodes. No external IR file shipped.
 - **DynamicsProcessor** (`effects/DynamicsProcessor.ts`): `createMasterLimiter()`.
+
+### 5.8 MetronomeEngine (`audio/metronome/MetronomeEngine.ts`)
+A peer singleton to `AudioEngine`, sharing the same `AudioContext` but with its own independent signal chain.
+
+**Signal chain** (bypasses the piano chain entirely):
+```
+OscillatorNode (ephemeral, per-beat)
+  → MetronomeGain (volume)
+    → ctx.destination          (always)
+    → AnalyserNode (optional)  (when "record metronome" is enabled)
+```
+
+**Scheduling** (Wilson "A Tale of Two Clocks" pattern):
+- A `setInterval` pump (25ms) calls `scheduleAudio()`, which pre-schedules beats into a 100ms lookahead window on the AudioContext timeline. `setInterval` is the *wakeup mechanism* — actual beat timing is `AudioContext.currentTime`. No drift.
+- A `requestAnimationFrame` loop reads `ctx.currentTime` and fires beat notifications to UI subscribers when a pre-scheduled beat's time has arrived (no `setTimeout` for visual sync).
+- BPM changes take effect within one lookahead window (≤100ms) — no burst of missed beats, no gap.
+- AudioContext suspension (tab switch, lock screen): `statechange` listener re-anchors `nextBeatTime` and restarts the loops on resume.
+- Clicks are `OscillatorNode` (880 Hz accent / 660 Hz sub-beat, 25ms, exponential decay) — created per beat, self-dispose on `onended`. Never enters `VoicePool`.
+
+**Recording integration**: when the `recordMetronome` setting is on, `MetronomeWidget` connects the metronome's output gain to `AudioEngine.getAnalyser()`, so clicks appear dry in recordings (standard click-track behavior — no reverb).
+
+**Beat visual sync**: `MetronomeEngine` maintains a stable `beatSnapshot` object (only changes identity when `beat/beats/playing` changes). `useMetronomeBeat()` hook wraps this in `useSyncExternalStore` — re-renders only once per beat (≤5×/sec at 300 BPM max).
 
 ---
 
@@ -474,6 +501,8 @@ npm run typecheck    # tsc --noEmit
 - [x] Touch + glissando
 - [x] Fullscreen, recording (download .webm), waveform visualizer
 - [x] Dark Monkeytype-style UI, Framer Motion
+- [x] Metronome: BPM 30–300, tap tempo, time signatures 2/4 3/4 4/4 6/8, volume,
+      accented beat, persistent prefs, beat-dot visual sync, record-metronome option
 - [ ] Sympathetic resonance (future)
 - [ ] Round-robin sample variation (future)
 - [ ] Key-noise mechanical samples (future)

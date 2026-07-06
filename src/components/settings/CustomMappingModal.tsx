@@ -106,6 +106,24 @@ export function CustomMappingModal({
       } as EventListenerOptions);
   }, [armedOffset, baseMidi]);
 
+  // Handle Escape key to close the modal when no key is being armed.
+  // Stops propagation so it doesn't trigger parent SettingsPanel drawer closure.
+  useEffect(() => {
+    if (!open || armedOffset !== null) return;
+    const handler = (e: KeyboardEvent): void => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    document.addEventListener("keydown", handler, { capture: true });
+    return () =>
+      document.removeEventListener("keydown", handler, {
+        capture: true,
+      } as EventListenerOptions);
+  }, [open, armedOffset, onClose]);
+
   const bindingsByOffset = useMemo(() => {
     const map = new Map<number, KeyBinding>();
     for (const b of draftBindings) {

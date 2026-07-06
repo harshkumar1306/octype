@@ -37,14 +37,24 @@ export function useSustainKey(): void {
 
     const onBlur = (): void => {
       inputRouter.setSustain(false, "keyboard-hold");
+      inputRouter.setSustain(false, "keyboard-toggle");
+    };
+
+    const onVisibilityChange = (): void => {
+      if (document.hidden) {
+        inputRouter.setSustain(false, "keyboard-hold");
+        inputRouter.setSustain(false, "keyboard-toggle");
+      }
     };
 
     document.addEventListener("keydown", onDown);
     document.addEventListener("keyup", onUp);
+    document.addEventListener("visibilitychange", onVisibilityChange);
     window.addEventListener("blur", onBlur);
     return () => {
       document.removeEventListener("keydown", onDown);
       document.removeEventListener("keyup", onUp);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       window.removeEventListener("blur", onBlur);
     };
   }, []);

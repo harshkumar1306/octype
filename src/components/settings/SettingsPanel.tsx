@@ -20,6 +20,7 @@ import { MidiDeviceSelector } from "@/components/settings/MidiDeviceSelector";
 import { useMappingStore } from "@/stores/mappingStore";
 import { usePianoStore } from "@/stores/pianoStore";
 import { useSettingsStore } from "@/stores/settingsStore";
+import { useMetronomeStore } from "@/stores/metronomeStore";
 
 export function SettingsPanel(): JSX.Element {
   const open = useSettingsStore((s) => s.settingsOpen);
@@ -78,6 +79,7 @@ export function SettingsPanel(): JSX.Element {
               <DisplaySection />
               <MappingSection />
               <AudioSection />
+              <MetronomeSection />
               <MidiSection />
             </div>
           </motion.aside>
@@ -274,6 +276,19 @@ function AudioSection(): JSX.Element {
   return (
     <Section title="audio">
       <AudioSettings />
+    </Section>
+  );
+}
+
+function MetronomeSection(): JSX.Element {
+  const recordMetronome = useMetronomeStore((s) => s.recordMetronome);
+  const setRecordMetronome = useMetronomeStore((s) => s.setRecordMetronome);
+
+  return (
+    <Section title="metronome">
+      <Row label="record metronome">
+        <Switch active={recordMetronome} onClick={() => setRecordMetronome(!recordMetronome)} />
+      </Row>
     </Section>
   );
 }
