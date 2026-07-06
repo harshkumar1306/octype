@@ -1,122 +1,78 @@
-"use client";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { PianoPageClient } from "@/app/PianoPageClient";
 
-/**
- * Main page — composes the landing screen and the piano shell.
- *
- * View flow:
- *   - "home": the Landing intro (what/how/features). Engine NOT started here
- *     unless it already was — no caching/audio until the user enters.
- *   - "piano": the instrument. A home button returns to "home" without
- *     tearing down the audio engine, so re-entering is instant.
- */
-
-import { useCallback, useEffect, useState } from "react";
-
-import { Header } from "@/components/ui/Header";
-import { Landing } from "@/components/ui/Landing";
-import { LoadingScreen } from "@/components/ui/LoadingScreen";
-import { StatusBar } from "@/components/ui/StatusBar";
-import { PianoKeyboard } from "@/components/piano/PianoKeyboard";
-import { OctaveRange } from "@/components/piano/OctaveRange";
-import { KeyLabelToggle } from "@/components/piano/KeyLabel";
-import { Visualizer } from "@/components/piano/Visualizer";
-import { Recorder } from "@/components/piano/Recorder";
-import { MetronomeWidget } from "@/components/piano/MetronomeWidget";
-import { SettingsPanel } from "@/components/settings/SettingsPanel";
-import { useKeyboardInput } from "@/hooks/useKeyboardInput";
-import { useAudioEngineStatus } from "@/hooks/useAudioEngine";
-import { requestMidi } from "@/hooks/useMidi";
-import { useSustainKey } from "@/hooks/useSustainKey";
-import { usePianoStore } from "@/stores/pianoStore";
-import { inputRouter } from "@/systems/input/InputRouter";
-
-type View = "home" | "piano";
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "https://octype.app",
+  },
+};
 
 export default function HomePage(): JSX.Element {
-  const [view, setView] = useState<View>("home");
-  const engineStatus = useAudioEngineStatus();
-
-  useKeyboardInput();
-  useSustainKey();
-
-  // Arrow key controls for octave range (only matters on the piano view).
-  useEffect(() => {
-    const handler = (e: KeyboardEvent): void => {
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-      const store = usePianoStore.getState();
-      switch (e.code) {
-        case "ArrowLeft":
-          e.preventDefault();
-          store.shiftOctave(-1);
-          break;
-        case "ArrowRight":
-          e.preventDefault();
-          store.shiftOctave(1);
-          break;
-        case "ArrowUp":
-          e.preventDefault();
-          store.setOctaves(store.octaves + 1);
-          break;
-        case "ArrowDown":
-          e.preventDefault();
-          store.setOctaves(store.octaves - 1);
-          break;
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, []);
-
-  const handleStart = useCallback(() => {
-    setView("piano");
-    void inputRouter.ensureEngineStarted();
-    void requestMidi();
-  }, []);
-
-  const handleHome = useCallback(() => {
-    // Release any held notes, but keep the engine warm for instant re-entry.
-    inputRouter.releaseAll();
-    setView("home");
-  }, []);
-
-  const showLoading =
-    view === "piano" &&
-    (engineStatus === "loading-samples" || engineStatus === "initializing");
+  // WebApplication JSON-LD schema
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Octype",
+    "url": "https://octype.app",
+    "applicationCategory": "MultimediaApplication",
+    "operatingSystem": "All",
+    "browserRequirements": "Requires HTML5, Web Audio API, and optionally Web MIDI API support.",
+    "offers": {
+      "@type": "Offer",
+      "price": "0.00",
+      "priceCurrency": "USD"
+    },
+    "description": "A premium browser-based virtual piano. Play a sampled acoustic grand piano online using your computer keyboard, MIDI keyboard, mouse, or touchscreen."
+  };
 
   return (
-    <main className="relative z-10 flex min-h-screen flex-col">
-      <Header showHome={view === "piano"} onHome={handleHome} />
+    <main className="relative flex min-h-screen flex-col justify-between">
+      {/* JSON-LD Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
 
-      {view === "home" ? (
-        <section className="flex flex-1 items-start justify-center">
-          <Landing onStart={handleStart} />
-        </section>
-      ) : showLoading ? (
-        <section className="flex flex-1 items-center justify-center px-4">
-          <LoadingScreen />
-        </section>
-      ) : (
-        <section className="flex flex-1 items-center justify-center px-2 sm:px-4">
-          <div className="w-full max-w-[98vw]">
-            <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-1">
-              <KeyLabelToggle />
-              <div className="flex items-center gap-2">
-                <MetronomeWidget />
-                <Recorder />
-              </div>
-            </div>
+      {/* The main playable piano app */}
+      <PianoPageClient />
 
-            <div className="rounded-xl border border-bg-subtle bg-bg-elevated/60 p-2 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)] sm:p-4">
-              <Visualizer />
-              <PianoKeyboard />
-              <OctaveRange />
-            </div>
+      {/* Concise, server-rendered crawlable SEO footer */}
+      <div className="mx-auto w-full max-w-4xl px-5 pb-8 pt-4 border-t border-bg-subtle/30 font-sans text-xs text-fg-subtle">
+        <div className="flex flex-col gap-4 sm:flex-row sm:justify-between items-center text-center sm:text-left">
+          <div className="max-w-xl">
+            <h1 className="font-mono text-sm font-semibold tracking-wider text-fg uppercase mb-2">
+              Play Piano Online
+            </h1>
+            <p className="leading-relaxed">
+              Welcome to <strong>Octype</strong>, a free browser-based <strong>virtual piano</strong> keyboard.
+              Octype recreates the rich acoustics of a sampled grand piano with high-resolution velocity layers, 
+              playable with a computer keyboard, mouse, touchscreen, or MIDI keyboard. Includes a built-in metronome, 
+              audio recorder, and visualizer.
+            </p>
           </div>
-        </section>
-      )}
-
-      <StatusBar />
-      <SettingsPanel />
+          <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 font-mono text-[11px] sm:justify-end">
+            <Link href="/computer-keyboard-piano" className="hover:text-fg underline">
+              Computer Piano
+            </Link>
+            <Link href="/midi-piano" className="hover:text-fg underline">
+              MIDI Keyboard Guide
+            </Link>
+            <Link href="/keyboard-mapping" className="hover:text-fg underline">
+              Keyboard Mappings
+            </Link>
+            <Link href="/how-to-play" className="hover:text-fg underline">
+              How to Play
+            </Link>
+            <Link href="/about" className="hover:text-fg underline">
+              About
+            </Link>
+            <Link href="/credits" className="hover:text-fg underline">
+              Credits
+            </Link>
+          </div>
+        </div>
+      </div>
     </main>
   );
 }

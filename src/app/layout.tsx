@@ -3,9 +3,35 @@ import type { Metadata, Viewport } from "next";
 import "@/app/globals.css";
 
 export const metadata: Metadata = {
-  title: "octype — virtual piano",
+  metadataBase: new URL("https://octype.app"),
+  title: {
+    default: "Octype — Free Online Piano Keyboard | Play Piano Online",
+    template: "%s | Octype",
+  },
   description:
-    "A premium browser-based virtual piano powered by the Salamander Grand samples.",
+    "A free online piano keyboard playable with a computer keyboard, mouse, or MIDI controller. Premium Salamander grand piano sound with sustain, recording, and metronome.",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: "Octype — Free Online Piano Keyboard | Play Piano Online",
+    description:
+      "Play a premium sampled grand piano directly in your browser. Supports computer keyboard, MIDI, sustain pedal, recording, and custom layouts.",
+    url: "https://octype.app",
+    siteName: "Octype",
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Octype — Free Online Piano Keyboard | Play Piano Online",
+    description:
+      "Play a premium sampled grand piano directly in your browser. Supports computer keyboard, MIDI, sustain pedal, recording, and custom layouts.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   icons: {
     icon: "/favicon.svg",
   },
